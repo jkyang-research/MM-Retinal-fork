@@ -1,2 +1,3 @@
 
 *.pyc
+/KeepFIT/KeepFIT-CFP/keepfit/modeling/__pycache__
