@@ -177,6 +177,10 @@ class KeepFITModel(torch.nn.Module):
                     print(f"Saving to  {filename}")
                     torch.save(self.state_dict(), filename)
             epoch += 1
+        # save a final
+        filename = self.out_path + self.vision_type + '_final_epoch' + str(epoch) + '.pth'
+        torch.save(self.state_dict(), filename)
+        
 
     # 领域知识参考   EK reference
     def train_epoch_KDAtte_s(self, loader, optimizer, scheduler=None, transforms=None, epoch=1, KD_loader=None):
