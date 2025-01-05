@@ -53,15 +53,15 @@ def get_loader(dataframes_path, data_root_path, datasets, balance=False, batch_s
 
         for i in selected_id_list:
             data_i = dataframe.loc[i, :].to_dict()              # 将每行变为字典  image,attributes,categories   Turn each line into a dictionary
-            data_i["categories"] = eval(data_i["categories"])
-            data_i["atributes"] = eval(data_i["atributes"])
+            # data_i["categories"] = eval(data_i["categories"])
+            # data_i["atributes"] = eval(data_i["atributes"])
 
             # 去除被ban的类别   Removes the banned category
             banned = False
-            if banned_categories is not None:
-                for iCat in data_i["categories"]:
-                    if iCat in banned_categories:
-                        banned = True
+            # if banned_categories is not None:
+            #     for iCat in data_i["categories"]:
+            #         if iCat in banned_categories:
+            #             banned = True
             if banned:
                 continue
 
@@ -73,34 +73,34 @@ def get_loader(dataframes_path, data_root_path, datasets, balance=False, batch_s
     # 领域知识图像文本对数据   Domain knowledge image text pair data
     if knowledge_dict:
         # MM数据集  MM dataset
-        # data_KD = []
-        # dataframe_KD = pd.read_csv("./local_data/dataframes/pretraining/39_MM_Retinal_dataset.csv")
-        # for i in range(len(dataframe_KD)):
-        #     sample_df = dataframe_KD.loc[i, :].to_dict()
-        #     data_i = {"image_path": data_root_path + sample_df["image"]}
-        #     data_i["caption"] = sample_df["caption"]
-        #     data_KD.append(data_i)
-
-        # 百度数据集    baidu dataset
-        print("process baidu...")
         data_KD = []
-        dataframe_KD = pd.read_csv("/mnt/data/")
+        dataframe_KD = pd.read_csv("./local_data/dataframes/pretraining/39_MM_Retinal_dataset.csv")
         for i in range(len(dataframe_KD)):
             sample_df = dataframe_KD.loc[i, :].to_dict()
-            sample_df["categories"] = eval(sample_df["categories"])  
-            sample_df["atributes"] = eval(sample_df["atributes"])
+            data_i = {"image_path": data_root_path + sample_df["image"]}
+            data_i["caption"] = sample_df["caption"]
+            data_KD.append(data_i)
 
-            banned = False
-            if banned_categories is not None:
-                for iCat in sample_df["categories"]:
-                    if iCat in banned_categories:
-                        banned = True
-            if banned:
-                continue
+        # 百度数据集    baidu dataset
+        # print("process baidu...")
+        # data_KD = []
+        # dataframe_KD = pd.read_csv("/mnt/data/")
+        # for i in range(len(dataframe_KD)):
+        #     sample_df = dataframe_KD.loc[i, :].to_dict()
+        #     sample_df["categories"] = eval(sample_df["categories"])  
+        #     sample_df["atributes"] = eval(sample_df["atributes"])
 
-            sample_df["image_name"] = sample_df["image"]
-            sample_df["image_path"] = "/mnt/data/jlzhang/Dataset/Resized/" + sample_df["image"]
-            data_KD.append(sample_df)
+        #     banned = False
+        #     if banned_categories is not None:
+        #         for iCat in sample_df["categories"]:
+        #             if iCat in banned_categories:
+        #                 banned = True
+        #     if banned:
+        #         continue
+
+        #     sample_df["image_name"] = sample_df["image"]
+        #     sample_df["image_path"] = "/mnt/data/jlzhang/Dataset/Resized/" + sample_df["image"]
+        #     data_KD.append(sample_df)
 
 
     # 训练数据   train set

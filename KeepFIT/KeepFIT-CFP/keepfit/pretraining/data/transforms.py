@@ -37,7 +37,7 @@ class LoadTensor():
 # Read images, normalize, change dimension order, add dictionary elements (img pure data)
 class LoadImage():
     def __init__(self, target="image_path"):
-        self.target = target,
+        self.target = target
 
     def __call__(self, data):
         img = np.array(Image.open(data[self.target]), dtype=float)
@@ -97,8 +97,8 @@ class ProduceDescription():
         self.caption = caption
 
     def __call__(self, data):
-        atr_sample = random.sample(data['atributes'], 1)[0] if len(data['atributes']) > 0 else ""
-        cat_sample = random.sample(data['categories'], 1)[0] if len(data['categories']) > 0 else ""
+        atr_sample = random.sample(data['atributes'], 1)[0] if len(data.get('atributes','')) > 0 else ""
+        cat_sample = random.sample(data['categories'], 1)[0] if len(data.get('categories','')) > 0 else ""
 
         data["sel_category"] = cat_sample
         data["report"] = [self.caption.replace("[ATR]",  atr_sample).replace("[CLS]",  cat_sample).replace("  ", " ")]

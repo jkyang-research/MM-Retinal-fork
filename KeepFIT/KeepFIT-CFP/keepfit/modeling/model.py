@@ -11,7 +11,7 @@ from pathlib import Path
 from .dictionary import definitions
 from . import constants
 from .misc import wget_gdrive_secure
-
+from datetime import datetime
 import torch
 import torchvision
 from torch.cuda.amp import autocast
@@ -31,7 +31,7 @@ class KeepFITModel(torch.nn.Module):
     #########################################
     def __init__(self, vision_type='resnet_v1', bert_type='emilyalsentzer/Bio_ClinicalBERT', vision_pretrained=True,
                  proj_dim=512, proj_bias=False, logit_scale_init_value=0.07, from_checkpoint=True, weights_path=None,
-                 out_path=None, image_size=512, caption="A fundus photograph of [CLS]", projection=True, norm_features=True):
+                 out_path=None, image_size=512, caption="A fundus photograph of [CLS]", projection=True, norm_features=True,knowledge_dict=True):
         super().__init__()
         # 输入格式、参数   输出   Input format, parameter output
         self.image_size = image_size
@@ -95,7 +95,7 @@ class KeepFITModel(torch.nn.Module):
                 print('\n Download model to:', input_dir + pretrained_id)
 
         state_dict = torch.load(weights_path, map_location="cuda:0")
-        self.load_state_dict(state_dict, strict=True)
+        self.load_state_dict(state_dict, strict=False)
         print('load model weight from:', weights_path)
 
     #########################################
@@ -126,7 +126,7 @@ class KeepFITModel(torch.nn.Module):
 
     # 模型训练的主函数  model train main function
     def fit(self, datalaoders, epochs=30, lr=5e-4, weight_decay=1e-5, scheduler=True, warmup_epoch=1, store_num=5,
-            transforms=None, local_rank=None):
+            transforms=None, local_rank=None,knowledge_dict=True):
         optimizer = torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=weight_decay)
 
         # tensorboard记录
@@ -142,14 +142,15 @@ class KeepFITModel(torch.nn.Module):
         else:
             scheduler = None
 
-        epoch = 15
+        epoch = 1
+        time_start = datetime.now()
         while epoch <= epochs:
             # 领域知识参考  EK reference
-            # loss_epoch = self.train_epoch_KDAtte_s(datalaoders["train"], optimizer, scheduler, transforms, epoch,
+            loss_epoch = self.train_epoch_KDAtte_s(datalaoders["train"], optimizer, scheduler, transforms, epoch,
             #                               datalaoders["KD"])
 
             # 领域知识参考与混合训练  EK reference + mixed train
-            loss_epoch = self.train_epoch_with_KD_loss_Atte_s(datalaoders["train"], optimizer, scheduler, transforms, epoch,
+            # loss_epoch = self.train_epoch_with_KD_loss_Atte_s(datalaoders["train"], optimizer, scheduler, transforms, epoch,
                                           datalaoders["KD"])
             # 领域知识参考与混合训练+特征融合  EK reference + mixed train + feature fusion
             # loss_epoch = self.train_epoch_with_KD_Atte_KDAtte_s(datalaoders["train"], optimizer, scheduler, transforms,
@@ -163,7 +164,8 @@ class KeepFITModel(torch.nn.Module):
             #                               datalaoders["KD"])
 
             if local_rank==0:
-                print('Epoch=%d: ave_loss=%2.5f' % (epoch, loss_epoch))
+                time_used = datetime.now() - time_start
+                print(f'time_used={time_used} {datetime.now()} Epoch=%d: ave_loss=%2.5f' % (epoch, loss_epoch))
                 # write.add_scalar("train_loss", loss_epoch, epoch)
 
             # 定期保存  路径给出若不存在会创建路径   save
@@ -171,8 +173,14 @@ class KeepFITModel(torch.nn.Module):
                 if self.out_path is not None:
                     if not os.path.isdir(self.out_path):
                         os.mkdir(self.out_path)
-                    torch.save(self.state_dict(), self.out_path + self.vision_type + '_epoch' + str(epoch) + '.pth')
+                    filename = self.out_path + self.vision_type + '_epoch' + str(epoch) + '.pth'
+                    print(f"Saving to  {filename}")
+                    torch.save(self.state_dict(), filename)
             epoch += 1
+        # save a final
+        filename = self.out_path + self.vision_type + '_final_epoch' + str(epoch) + '.pth'
+        torch.save(self.state_dict(), filename)
+        
 
     # 领域知识参考   EK reference
     def train_epoch_KDAtte_s(self, loader, optimizer, scheduler=None, transforms=None, epoch=1, KD_loader=None):
@@ -186,14 +194,13 @@ class KeepFITModel(torch.nn.Module):
 
         epoch_iterator = tqdm(loader, desc="Training (X / X Steps) (loss=X.X)", dynamic_ncols=False)
         for step, (batch, KD_batch) in enumerate(zip(epoch_iterator, KD_loader)):
-
             images = batch["image"].to(device).to(torch.float32)
             text_tokens = self.text_model.tokenize(list(batch["report"][0]))
             input_ids = text_tokens["input_ids"].to(device).to(torch.long)
             attention_mask = text_tokens["attention_mask"].to(device).to(torch.long)
 
             KD_images = KD_batch["image"].to(device).to(torch.float32)
-            KD_text_tokens = self.text_model.tokenize(KD_batch["caption"])
+            KD_text_tokens = self.text_model.tokenize(KD_batch["report"][0])
             KD_input_ids = KD_text_tokens["input_ids"].to(device).to(torch.long)
             KD_attention_mask = KD_text_tokens["attention_mask"].to(device).to(torch.long)
 
@@ -402,6 +409,15 @@ class KeepFITModel(torch.nn.Module):
         loader.sampler.set_epoch(epoch)
 
         epoch_iterator = tqdm(loader, desc="Training (X / X Steps) (loss=X.X)", dynamic_ncols=False)
+
+        # Before the training loop, add these checks
+        assert epoch_iterator is not None, "epoch_iterator is None"
+        assert KD_loader is not None, "KD_loader is None"
+
+        # Also check their lengths
+        print(f"epoch_iterator length: {len(loader)}")
+        print(f"KD_loader length: {len(KD_loader)}")
+
         for step, (batch, KD_batch) in enumerate(zip(epoch_iterator, KD_loader)):
             images = batch["image"].to(device).to(torch.float32)
             text_tokens = self.text_model.tokenize(list(batch["report"][0]))    
