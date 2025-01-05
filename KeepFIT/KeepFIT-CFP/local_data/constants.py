@@ -1,8 +1,8 @@
 """
 各种路径
 """
-PATH_DATASETS = "../Datasets/FUNDUS/"      # 与项目平级的目录  A directory at the same level of the project
-PATH_RESIZED_DATASETS = "../Datasets/FUNDUS/Resized/"
+PATH_DATASETS = "../../../Datasets/FUNDUS/"      # 与项目平级的目录  A directory at the same level of the project
+PATH_RESIZED_DATASETS = "../../../Datasets/FUNDUS/Resized/"
 
 PATH_DATAFRAME_PRETRAIN = "./local_data/dataframes/pretraining/"
 
