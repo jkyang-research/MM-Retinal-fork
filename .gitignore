@@ -1,3 +1,4 @@
 
 *.pyc
 /KeepFIT/KeepFIT-CFP/keepfit/modeling/__pycache__
+KeepFIT/KeepFIT-CFP/results/pretraining/flair_resnet.pth
