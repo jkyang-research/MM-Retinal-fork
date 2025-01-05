@@ -142,7 +142,7 @@ class KeepFITModel(torch.nn.Module):
         else:
             scheduler = None
 
-        epoch = 15
+        epoch = 1
         time_start = datetime.now()
         while epoch <= epochs:
             # 领域知识参考  EK reference
