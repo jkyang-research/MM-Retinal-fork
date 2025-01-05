@@ -7,7 +7,7 @@ Also, we prepare here the dataframes for prompts (zero-shot) and transferability
 对数据集一一的处理，
 """
 
-import os
+import os,sys
 import json
 import glob
 import re
@@ -1199,11 +1199,12 @@ def adequate_38_SynFundus(frac):
 def MM_Retinal_dataset():
     path_dataset = "39_MM_Retinal_dataset/"
     subpath_images = ["CFP"]
-
+    n=0
     data = []
     for iSub in subpath_images:
         dataframe = pd.read_csv(PATH_DATASETS + path_dataset + iSub + "_translated_v1.csv")
         for iFile in range(dataframe.shape[0]):
+            n+=1
             id = dataframe["Image_ID"].values[iFile]
             caption = dataframe["en_caption"].values[iFile]
             image_path = path_dataset + iSub + "/" + id      
@@ -1221,7 +1222,7 @@ def MM_Retinal_dataset():
             if flag==True:
                 data.append({"image": image_path,
                          "caption": caption})
-
+        print(str(n)+" images processed. and the list is in "+PATH_DATAFRAME_PRETRAIN+"39_MM_Retinal_dataset.csv")
         df_out = pd.DataFrame(data)
         df_out.to_csv(PATH_DATAFRAME_PRETRAIN + "39_MM_Retinal_dataset.csv")
 
@@ -1354,4 +1355,11 @@ def adequate_CGI_HRDC():
     df_out.to_csv(PATH_DATAFRAME_TRANSFERABILITY_SEGMENTATION + "CGI_HRDC_Task2.csv")
 
 
-TAOP()
+if __name__ == "__main__":
+    print(f"current Path: {os.getcwd()}")
+    print(f"current PATH_DATASETS: {PATH_DATASETS}")
+    args = sys.argv
+    # args[0] = current file
+    # args[1] = function name
+    # args[2:] = function args : (*unpacked)
+    globals()[args[1]](*args[2:])
